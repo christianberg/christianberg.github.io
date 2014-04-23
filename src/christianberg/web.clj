@@ -52,3 +52,9 @@
     (markdown-pages (stasis/slurp-directory "resources/md" #"\.md$"))}))
 
 (def app (stasis/serve-pages get-pages))
+
+(def export-dir "dist")
+
+(defn export []
+  (stasis/empty-directory! export-dir)
+  (stasis/export-pages (get-pages) export-dir))
