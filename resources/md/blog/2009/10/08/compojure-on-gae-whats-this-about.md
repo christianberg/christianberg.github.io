@@ -1,8 +1,4 @@
----
-layout: post
-title: Compojure on GAE - What's this about?
-category: compojureongae
----
+# Compojure on GAE - What's this about?
 
 I'm interested in the Clojure programming language and the Google App
 Engine platform right now, and I'm playing around  with the

@@ -1,8 +1,4 @@
----
-layout: post
-title: Setting up the Dev Environment
-category: compojureongae
----
+# Setting up the Dev Environment
 
 In this post I'll cover the setup I use for developing my Compojure/GAE app.
 

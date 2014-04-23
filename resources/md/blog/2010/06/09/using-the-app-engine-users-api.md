@@ -1,8 +1,4 @@
----
-layout: post
-title: Using the App Engine Users API from Clojure
-category: compojureongae
----
+# Using the App Engine Users API from Clojure
 
 In my previous post about [Accessing the Datastore][0] I set up basic
 security using a `security-constraint` element in the deployment

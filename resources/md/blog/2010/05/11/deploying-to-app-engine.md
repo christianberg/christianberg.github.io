@@ -1,8 +1,4 @@
----
-layout: post
-title: Deploying to App Engine
-category: compojureongae
----
+# Deploying to App Engine
 
 In my [last post][0], I set up a basic Hello World Compojure app,
 running on a local Jetty instance. Now I want to deploy this to Google

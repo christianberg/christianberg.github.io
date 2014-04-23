@@ -1,8 +1,4 @@
----
-layout: post
-title: Accessing the App Engine Datastore
-category: compojureongae
----
+# Accessing the App Engine Datastore
 
 In my [last post][0], I managed to deploy a Compojure app to Google
 App Engine. Serving static content isn't very exciting, though. Pretty

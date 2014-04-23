@@ -1,8 +1,4 @@
----
-layout: post
-title: Getting Interactive Development to Work (Again)
-category: compojureongae
----
+# Getting Interactive Development to Work (Again)
 
 In my [last post][0] I promised to fix my local development setup to
 enable the interactive development style typical for Clojure and make

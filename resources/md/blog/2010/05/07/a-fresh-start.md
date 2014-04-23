@@ -1,8 +1,4 @@
----
-layout: post
-title: A Fresh Start
-category: compojureongae
----
+# A Fresh Start
 
 Since my last post a lot has happened in Clojure- and
 Compojure-Land. Managing dependencies and building projects is much
