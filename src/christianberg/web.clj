@@ -66,13 +66,6 @@
    [:div.container
     content]))
 
-(defn markdown-pages [pages]
-  (into {}
-        (for [[path content] pages]
-          (let [stripped-path (str/replace path #"\.md$" "")]
-            [stripped-path
-             (layout-post (md/to-html content))]))))
-
 (defn date-format [date]
   (tf/unparse (tf/formatter "d MMMM yyyy") date))
 
@@ -118,7 +111,9 @@
     :public
     (stasis/slurp-directory "resources/public" #".*\.(html|css|js)$")
     :markdown
-    (markdown-pages (stasis/slurp-directory "resources/md" #"\.md$"))}))
+    (into {}
+          (for [post (posts)]
+            [(:url post) (layout-post (:html post))]))}))
 
 (def app (stasis/serve-pages get-pages))
 
