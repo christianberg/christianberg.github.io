@@ -103,17 +103,31 @@
               [:div.col-md-11
                (:title post)]]])]])])))
 
+(defn redirect-to [url]
+  (html5
+   [:head
+    [:link {:rel "canonical"
+            :href url}]
+    [:meta {:http-equiv "refresh"
+            :content (str "0; url=" url)}]]))
+
 (defn get-pages []
   (stasis/merge-page-sources
    {:index
     {"/" (index-page)
-     "/archive" (archive-page)}
+     "/archive" (archive-page)
+     "/blog/archives" (redirect-to "/archive")}
     :public
     (stasis/slurp-directory "resources/public" #".*\.(html|css|js)$")
     :markdown
     (into {}
           (for [post (posts)]
-            [(:url post) (layout-post (:html post))]))}))
+            [(:url post) (layout-post (:html post))]))
+    :redirects
+    (into {}
+          (for [{url :url} (posts)]
+            [(str "/blog" url)
+             (redirect-to url)]))}))
 
 (def app (stasis/serve-pages get-pages))
 
