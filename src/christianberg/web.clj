@@ -28,7 +28,10 @@
      [:div.container
       [:div.navbar-header
        [:a.navbar-brand {:href "/"}
-        "christianberg.github.io"]]]]
+        "christianberg.github.io"]]
+      [:a.navbar-text.navbar-right
+       {:href "/archive"}
+       "Archive"]]]
     content
     [:footer
      [:div.container
@@ -73,6 +76,10 @@
 (defn date-format [date]
   (tf/unparse (tf/formatter "d MMMM yyyy") date))
 
+(defn date-short-format [date]
+  (.toUpperCase
+   (tf/unparse (tf/formatter "d MMM") date)))
+
 (defn index-page []
   (layout-page
    [:div.container
@@ -84,12 +91,30 @@
        [:a.btn.btn-default.btn-xs
         {:href (:url post)}
         "more &raquo;"]
-       [:hr]])]))
+       [:hr]])
+    [:a.btn.btn-default {:href "/archive"} "See all posts"]]))
+
+(defn archive-page []
+  (let [posts-by-year (group-by #(t/year (:date %)) (posts))]
+    (layout-page
+     [:div.container
+      (for [year (reverse (sort (keys posts-by-year)))]
+        [:div.row
+         [:div.col-md-12
+          [:h2 year]
+          (for [post (reverse (sort-by :date (posts-by-year year)))]
+            [:div.row
+             [:a {:href (:url post)}
+              [:div.col-md-1.text-muted.text-right
+               (date-short-format (:date post))]
+              [:div.col-md-11
+               (:title post)]]])]])])))
 
 (defn get-pages []
   (stasis/merge-page-sources
    {:index
-    {"/" (index-page)}
+    {"/" (index-page)
+     "/archive" (archive-page)}
     :public
     (stasis/slurp-directory "resources/public" #".*\.(html|css|js)$")
     :markdown
