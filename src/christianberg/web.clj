@@ -17,6 +17,16 @@
 (defn current-year []
   (t/year (t/now)))
 
+(def tracking-code "
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-21431349-1', 'christianberg.github.io');
+  ga('send', 'pageview');
+")
+
 (defn layout-page [content]
   (html5
    [:head
@@ -50,7 +60,8 @@
      [:div.container
       [:p.text-muted
        [:small
-        (str "&copy; 2009-" (current-year) " Christian Berg")]]]]]))
+        (str "&copy; 2009-" (current-year) " Christian Berg")]]]]
+    [:script tracking-code]]))
 
 (defn posts []
   "Returns a sequence of all blog posts, where each post is a map."
