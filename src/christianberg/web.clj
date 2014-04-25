@@ -39,29 +39,10 @@
        [:small
         (str "&copy; 2009-" (current-year) " Christian Berg")]]]]]))
 
-(defn replace-codeblocks [content]
-  (str/replace content
-               #"\{\% (end)?codeblock \%\}"
-               "```"))
-
-(defn replace-gists [content]
-  (str/replace content
-               #"\{\% gist (\d+) \%\}"
-               (fn [[_ gist-id]]
-                 (str "```\n"
-                      (slurp
-                       (str "https://gist.githubusercontent.com/christianberg/"
-                            gist-id
-                            "/raw"))
-                      "\n```"))))
-
 (defn posts []
   "Returns a sequence of all blog posts, where each post is a map."
   (for [[path content] (stasis/slurp-directory "resources/md" #"\.md$")]
-    (let [content (-> content
-                      replace-codeblocks
-                      replace-gists)
-          title (second (first (re-seq #"# (.*)" content)))
+    (let [title (second (first (re-seq #"# (.*)" content)))
           first-paragraph-source (second
                                   (first
                                    (re-seq #"(?ms)^# .*?$(.*)<!--more-->"
