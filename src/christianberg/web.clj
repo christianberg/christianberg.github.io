@@ -183,5 +183,4 @@
 (def export-dir "dist")
 
 (defn export []
-  (stasis/empty-directory! export-dir)
   (stasis/export-pages (get-pages) export-dir))
