@@ -1,0 +1,13 @@
+#!/bin/bash
+
+rm -rf dist
+git clone -b master . dist
+pushd dist
+ls -A | grep -v .git | xargs rm -rf
+popd
+lein build-site
+pushd dist
+git add --all .
+git commit -m 'Auto-generate site.'
+git push origin master
+popd
