@@ -18,14 +18,20 @@ can forget about getting all the dependencies. We'll use Leiningen for
 that. To install Leiningen, follow the [installation instructions][1]. 
 Then create a new project:
 
-{% codeblock %}
+```shell
 lein new compojureongae
-{% endcodeblock %}
+```
 
 This creates the basic directory structure with some skeleton
 code. Edit the project.clj file to look like this:
 
-{% gist 393313 %}
+```clojure
+(defproject compojureongae "0.1.0-SNAPSHOT"
+  :description "Example app for deployoing Compojure on Google App Engine"
+  :dependencies [[compojure "0.4.0-SNAPSHOT"]
+                 [ring/ring-jetty-adapter "0.2.0"]]
+  :dev-dependencies [[leiningen/lein-swank "1.1.0"]])
+```
 
 I removed the direct dependencies on clojure and clojure-contrib,
 since depending on compojure automatically pulls these, but you could
@@ -43,7 +49,18 @@ Run `lein swank` to start a REPL, open Emacs and enter
 away in Emacs! Open `src/compojureongae/core.clj` and enter the
 following: 
 
-{% gist 393319 %}
+```clojure
+(ns compojureongae.core
+  (:use compojure.core
+        ring.adapter.jetty)
+  (:require [compojure.route :as route]))
+
+(defroutes example
+  (GET "/" [] "<h1>Hello World Wide Web!</h1>")
+  (route/not-found "Page not found"))
+
+(run-jetty example {:port 8080})
+```
 
 (This is taken directly from Compojure's [Getting Started][3] page.)
 Pressing `C-c C-k` compiles the file and starts the server - you can

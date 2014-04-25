@@ -23,7 +23,19 @@ freiheit.com.
 
 I updated my project.clj file with the new dependencies:
 
-{% gist 419744 %}
+```clojure
+(defproject compojureongae "0.2.0"
+  :description "Example app for deployoing Compojure on Google App Engine"
+  :namespaces [compojureongae.core]
+  :dependencies [[compojure "0.4.0-RC3"]
+                 [ring/ring-servlet "0.2.1"]
+                 [hiccup "0.2.4"]
+                 [appengine "0.2"]
+                 [com.google.appengine/appengine-api-1.0-sdk "1.3.4"]]
+  :dev-dependencies [[swank-clojure "1.2.0"]]
+  :compile-path "war/WEB-INF/classes"
+  :library-path "war/WEB-INF/lib")
+```
 
 I'm using [Hiccup][5] (formerly part of Compojure) for HTML
 generation. Running `lein deps` runs into an error, because it can't
@@ -37,7 +49,20 @@ dependencies into my lib dir.
 Along with updating the dependencies in project.clj I have to import
 the needed symbols into my namespace:
 
-{% gist 419856 %}
+```clojure
+(ns compojureongae.core
+  (:gen-class :extends javax.servlet.http.HttpServlet)
+  (:use compojure.core
+        [ring.util.servlet   :only [defservice]]
+        [ring.util.response  :only [redirect]]
+        [hiccup.core         :only [h html]]
+        [hiccup.page-helpers :only [doctype include-css link-to xhtml-tag]]
+        [hiccup.form-helpers :only [form-to text-area text-field]])
+  (:import (com.google.appengine.api.datastore Query))
+  (:require [compojure.route          :as route]
+            [appengine.datastore.core :as ds]))
+
+```
 
 The choice of using `:use` or `:require` is pretty arbitrary in this
 case - I just used both to demonstrate the different options. With
@@ -58,11 +83,24 @@ I want to be able to create simple blog posts, consisting of a title
 and a body. I need two new routes, one for displaying a form, and one
 that is used as the action URL for the form:
 
-{% gist 419875 %}
+```clojure
+(defroutes example
+  (GET "/" [] (main-page))
+  (GET "/new" [] (render-page "New Post" new-form))
+  (POST "/post" [title body] (create-post title body))
+  (route/not-found "Page not found"))
+
+```
 
 Here's the code that handles the form submission:
 
-{% gist 419936 %}
+```clojure
+(defn create-post [title body]
+  "Stores a new post in the datastore and issues an HTTP Redirect to the main page."
+  (ds/create-entity {:kind "post" :title title :body body})
+  (redirect "/"))
+
+```
 
 Amazingly simple. The `create-entity` function just takes a Clojure
 map, which needs to have a `:kind` entry, and stores it in the
@@ -72,7 +110,23 @@ datastore. After that I issue an HTTP redirect to the main page.
 
 Retrieving data is just as simple. On the main page, I just display all posts:
 
-{% gist 419939 %}
+```clojure
+(defn render-post [post]
+  "Renders a post to HTML."
+  [:div
+   [:h2 (h (:title post))]
+   [:p (h (:body post))]])
+
+(defn get-posts []
+  "Returns all posts stored in the datastore."
+  (ds/find-all (Query. "post")))
+
+(defn main-page []
+  "Renders the main page by displaying all posts."
+  (render-page "Compojure on GAE"
+    (map render-post (get-posts))))
+
+```
 
 The `h` function takes care of escaping special characters in the user
 input, so I don't run into any cross-site scripting
@@ -91,7 +145,18 @@ simple route and enable security for some URLs in the deployment
 descriptor. That way the application itself is blissfully unaware of
 it. I just need to add this to the web.xml file:
 
-{% gist 420841 %}
+```xml
+  <security-constraint>
+    <web-resource-collection>
+      <url-pattern>/new</url-pattern>
+      <url-pattern>/post</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>admin</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+```
 
 Now only logged-in admin users can post new entries. You can see the
 deployed version of the app here:

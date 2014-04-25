@@ -26,7 +26,79 @@ environment setup.
 
 Enough said, here's the code. I'll go through it def by def below.
 
-{% gist 425238 %}
+```clojure
+(ns local-dev
+  "Tools for local development.
+   Enables the use of the App Engine APIs on the REPL and in a local Jetty instance."
+  (:use ring.adapter.jetty
+        [ring.middleware file file-info])
+  (:import [java.io File]
+           [java.util HashMap]
+           [com.google.apphosting.api ApiProxy ApiProxy$Environment]
+           [com.google.appengine.tools.development
+            ApiProxyLocalFactory
+            LocalServerEnvironment]))
+
+(defonce *server* (atom nil))
+(def *port* 8181)
+
+(defn- set-app-engine-environment []
+  "Sets up the App Engine environment for the current thread."
+  (let [att (HashMap. {"com.google.appengine.server_url_key"
+                       (str "http://localhost:" *port*)})
+        env-proxy (proxy [ApiProxy$Environment] []
+                    (isLoggedIn [] false)
+                    (getRequestNamespace [] "")
+                    (getDefaultNamespace [] "")
+                    (getAttributes [] att)
+                    (getAppId [] "_local_"))]
+    (ApiProxy/setEnvironmentForCurrentThread env-proxy)))
+
+(defn- set-app-engine-delegate [dir]
+  "Initializes the App Engine services. Needs to be run (at least) per JVM."
+  (let [local-env (proxy [LocalServerEnvironment] []
+                    (getAppDir [] (File. dir))
+                    (getAddress [] "localhost")
+                    (getPort [] *port*)
+                    (waitForServerToStart [] nil))
+        api-proxy (.create (ApiProxyLocalFactory.)
+                           local-env)]
+    (ApiProxy/setDelegate api-proxy)))
+
+(defn init-app-engine
+  "Initializes the App Engine services and sets up the environment. To be called from the REPL."
+  ([] (init-app-engine "/tmp"))
+  ([dir]
+     (set-app-engine-delegate dir)
+     (set-app-engine-environment)))
+
+(defn wrap-local-app-engine [app]
+  "Wraps a ring app to enable the use of App Engine Services."
+  (fn [req]
+    (set-app-engine-environment)
+    (app req)))
+
+(defn start-server [app]
+  "Initializes the App Engine services and (re-)starts a Jetty server
+   running the supplied ring app, wrapping it to enable App Engine API use
+   and serving of static files."
+  (set-app-engine-delegate "/tmp")
+  (swap! *server* (fn [instance]
+                   (when instance
+                     (.stop instance))
+                   (let [app (-> app
+                                 (wrap-local-app-engine)
+                                 (wrap-file "./war")
+                                 (wrap-file-info))]
+                     (run-jetty app {:port *port*
+                                     :join? false})))))
+
+(defn stop-server []
+  "Stops the local Jetty server."
+  (swap! *server* #(when % (.stop %))))
+
+
+```
 
 The code is in a separate namespace, so it doesn't get AOT-compiled
 and deployed with the rest of the app. I'm using an atom to store the
@@ -69,7 +141,23 @@ the Jetty server (and sets the atom back to nil).
 To use the local API implementations we need some additional jars on
 the classpath. Here's the updated project.clj:
 
-{% gist 425239 %}
+```clojure
+(defproject compojureongae "0.2.0"
+  :description "Example app for deployoing Compojure on Google App Engine"
+  :namespaces [compojureongae.core]
+  :dependencies [[compojure "0.4.0-RC3"]
+                 [ring/ring-servlet "0.2.1"]
+                 [hiccup "0.2.4"]
+                 [appengine "0.2"]
+                 [com.google.appengine/appengine-api-1.0-sdk "1.3.4"]
+                 [com.google.appengine/appengine-api-labs "1.3.4"]]
+  :dev-dependencies [[swank-clojure "1.2.0"]
+                     [ring/ring-jetty-adapter "0.2.0"]
+                     [com.google.appengine/appengine-local-runtime "1.3.4"]
+                     [com.google.appengine/appengine-api-stubs "1.3.4"]]
+  :compile-path "war/WEB-INF/classes"
+  :library-path "war/WEB-INF/lib")
+```
 
 The new dependencies go into `dev-dependencies`, since they mustn't be
 deployed with the app. However, in the current development version of
@@ -79,7 +167,24 @@ intended for Leiningen plugins such as swank-clojure - they are not
 put on the classpath for the REPL. I had to patch Leiningen to make
 this work. Here's the diff:
 
-{% gist 425246 %}
+```diff
+diff --git a/src/leiningen/classpath.clj b/src/leiningen/classpath.clj
+index 3be7e1f..836740e 100644
+--- a/src/leiningen/classpath.clj
++++ b/src/leiningen/classpath.clj
+@@ -8,7 +8,9 @@
+   "Returns a seq of Files for all the jars in the project's library directory."
+   [project]
+   (filter #(.endsWith (.getName %) ".jar")
+-          (file-seq (file (:library-path project)))))
++          (concat
++           (file-seq (file (:library-path project)))
++           (file-seq (file (str (:root project) "/lib/dev"))))))
+ 
+ (defn make-path
+   "Constructs an ant Path object from Files and strings."
+
+```
 
 I'll try to get this (or something similar) into Leiningen. **Update:
 I wasn't the only one with this problem. It was recently patched in
@@ -91,7 +196,11 @@ last post, you'll likely have to manually install the jars from the
 App Engine SDK into your local Maven repository. Here's an example
 command for one of the jars:
 
-{% gist 425284 %}
+```shell
+mvn install:install-file -DgroupId=com.google.appengine \
+-DartifactId=appengine-api-labs -Dversion=1.3.4 -Dpackaging=jar \
+-Dfile=$GAESDK/lib/user/appengine-api-labs-1.3.4.jar
+```
 
 ## Putting it to use
 
@@ -99,16 +208,16 @@ Run `lein swank`, enter `M-x slime-connect` in Emacs to connect to the
 REPL and code away as usual. To call functions that make use of the
 App Engine API, enter this in the REPL:
 
-{% highlight clojure %}
+```clojure
 (require 'local-dev)
 (local-dev/init-app-engine)
-{% endhighlight %}
+```
 
 To start a Jetty server, just enter:
 
-{% highlight clojure %}
+```clojure
 (local-dev/start-server (var example))
-{% endhighlight %}
+```
 
 `example` is the name of the Compojure app defined by `defroutes` in
 core.clj.  **Update: Using `var` here allows you to change the

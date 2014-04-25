@@ -16,12 +16,33 @@ ring API makes this trivial.
 Obviously, Google runs their own app servers, so we don't need to
 start a Jetty instance. The updated core.clj looks like this: 
 
-{% gist 397298 %}
+```clojure
+(ns compojureongae.core
+  (:gen-class :extends javax.servlet.http.HttpServlet)
+  (:use compojure.core
+        ring.util.servlet)
+  (:require [compojure.route :as route]))
+
+(defroutes example
+  (GET "/" [] "<h1>Hello World Wide Web!</h1>")
+  (route/not-found "Page not found"))
+
+(defservice example)
+```
 
 The project.clj file needs to be updated to reflect the changed
 dependencies:
 
-{% gist 397390 %}
+```clojure
+(defproject compojureongae "0.1.0"
+  :description "Example app for deployoing Compojure on Google App Engine"
+  :namespaces [compojureongae.core]
+  :dependencies [[compojure "0.4.0-SNAPSHOT"]
+                 [ring/ring-servlet "0.2.1"]]
+  :dev-dependencies [[leiningen/lein-swank "1.2.0-SNAPSHOT"]]
+  :compile-path "war/WEB-INF/classes"
+  :library-path "war/WEB-INF/lib")
+```
 
 Note that I added a `:namespaces` entry. This triggers the AOT
 compilation of the Clojure source into Java bytecode. **[Edit]** I
@@ -32,7 +53,27 @@ Google App Engine requires two config files, `web.xml` and
 straight-forward. The `web.xml` defines the mapping from URL patterns
 to servlet classes. Here it is: 
 
-{% gist 397401 %}
+```xml
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app 
+   xmlns="http://java.sun.com/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+   version="2.5"> 
+  <display-name>Compojure on GAE</display-name>
+  
+  <servlet>
+    <servlet-name>blog</servlet-name>
+    <servlet-class>compojureongae.core</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>blog</servlet-name>
+    <url-pattern>/</url-pattern>
+  </servlet-mapping>
+</web-app>
+
+```
 
 The `servlet-name` (`blog`) is a generic identifier, you can use
 anything you like. The `servlet-class` needs to be the clojure namespace
@@ -42,7 +83,16 @@ that implements the `HttpServlet` interface - in this case
 In the `appengine-web.xml` we set the GAE application id and an
 arbitrary version string:
 
-{% gist 397411 %}
+```xml
+<appengine-web-app xmlns="http://appengine.google.com/ns/1.0">
+  <!-- Replace this with your application id from http://appengine.google.com -->
+  <application>compojureongae</application>
+
+  <version>v0-1</version>
+
+</appengine-web-app>
+
+```
 
 I set up a github repository for my experiments at
 <http://github.com/christianberg/compojureongae>.
@@ -66,22 +116,22 @@ directory structure. This is accomplished by customizing the
 above). Building the project is simply done with the standard lein
 commands:
 
-{% codeblock %}
+```shell
 lein clean
 lein deps
 lein compile
-{% endcodeblock %}
+```
 
 The current stable version of leiningen (1.1.0) mixes the dependencies
 and the dev-dependencies. If you don't want the dev-dependency jars
 included in your deployment, run this sequence of commands before
 deploying:
 
-{% codeblock %}
+```shell
 lein clean
 lein deps skip
 lein compile
-{% endcodeblock %}
+```
 
 The development version of leiningen (1.2.0-SNAPSHOT) separates the
 dev-dependencies into lib/dev, so you might want to check it out.
@@ -95,9 +145,9 @@ with the App Engine SDK. If you haven't yet, [download][2] it now.
 To make sure our war file is ok, let's test it locally. I unpacked the
 SDK in the directory `$GAESDK`. Here's how to start the local server:
 
-{% codeblock %}
+```shell
 $GAESDK/bin/dev_appserver.sh war
-{% endcodeblock %}
+```
 
 You should see the familiar page at <http://localhost:8080/>
 
@@ -105,9 +155,9 @@ You should see the familiar page at <http://localhost:8080/>
 
 It's time to deploy. Just run
 
-{% codeblock %}
+```shell
 $GAESDK/bin/appcfg.sh update war
-{% endcodeblock %}
+```
 
 Enter your Google login when prompted and wait for the app to
 deploy. (Remember that you need to create an Application in the GAE
