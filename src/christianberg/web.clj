@@ -53,7 +53,7 @@
                          :title "{:author \"Christian Berg\"\n :type :blog}"}
         "(christianberg.github.io)"]]
       [:a.navbar-text.navbar-right
-       {:href "/archive"}
+       {:href "/archive/"}
        "Archive"]]]
     content
     [:footer
@@ -78,7 +78,7 @@
           slug (slug-from-path path)
           id (str (tf/unparse (tf/formatters :date) date) "-" slug)]
       {:path path
-       :url (str/replace path #"\.md$" "")
+       :url (str/replace path #"\.md$" "/")
        :id id
        :slug slug
        :title title
@@ -114,7 +114,7 @@
         {:href (:url post)}
         "more &raquo;"]
        [:hr]])
-    [:a.btn.btn-default {:href "/archive"} "Blog Archive"]]))
+    [:a.btn.btn-default {:href "/archive/"} "Blog Archive"]]))
 
 (defn archive-page []
   (let [posts-by-year (group-by #(t/year (:date %)) (posts))]
@@ -163,8 +163,8 @@
   (stasis/merge-page-sources
    {:index
     {"/" (index-page)
-     "/archive" (archive-page)
-     "/blog/archives" (redirect-to "/archive")
+     "/archive/" (archive-page)
+     "/blog/archives/" (redirect-to "/archive/")
      "/atom.xml" (atom-xml (reverse (sort-by :date (posts))))}
     :public
     (stasis/slurp-directory "resources/public" #".*\.(html|css|js)$")

@@ -2,8 +2,8 @@
   :description "Source for my blog"
   :url "http://christianberg.github.io/"
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [stasis "1.0.1"]
-                 [ring "1.2.2"]
+                 [stasis "2.1.1"]
+                 [ring "1.3.0"]
                  [hiccup "1.0.5"]
                  [me.raynes/cegdown "0.1.1"]
                  [clj-time "0.7.0"]
