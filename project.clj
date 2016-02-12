@@ -1,7 +1,7 @@
 (defproject christianberg "0.1.0-SNAPSHOT"
   :description "Source for my blog"
   :url "http://christianberg.github.io/"
-  :dependencies [[org.clojure/clojure "1.7.0"]
+  :dependencies [[org.clojure/clojure "1.8.0"]
                  [stasis "2.3.0"]
                  [ring "1.4.0"]
                  [hiccup "1.0.5"]
